@@ -1,15 +1,38 @@
-// service-worker.js
+const CACHE_NAME = 'property-availability-cache-v1';
+const urlsToCache = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/logo-02.png'
+];
 
-self.addEventListener('install', (e) => {
-  console.log('Service Worker installed');
-  self.skipWaiting(); // Force the waiting SW to become active
+// Install event - caching app shell
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Opened cache');
+        return cache.addAll(urlsToCache);
+      })
+  );
 });
 
-self.addEventListener('activate', (e) => {
-  console.log('Service Worker activated');
+// Activate event
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating...');
 });
 
-self.addEventListener('fetch', (e) => {
-  // For now, just pass through network requests
-  e.respondWith(fetch(e.request));
+// Fetch event - serving from cache if available
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // Serve from cache if available
+        if (response) {
+          return response;
+        }
+        // Else fetch from network
+        return fetch(event.request);
+      })
+  );
 });
