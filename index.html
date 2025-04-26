@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Property Availability</title>
+
+  <!-- Favicon for app icon (using the same logo) -->
+  <link rel="icon" href="logo-02.png" type="image/png"> <!-- Logo used as favicon -->
+
   <style>
     * {
       margin: 0;
@@ -13,7 +17,7 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #6e7dff, #4f88f8);
+      background: white; /* Updated background color to white */
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -33,7 +37,7 @@
     }
 
     .logo {
-      width: 100px;
+      width: 120px;  /* Increased logo size */
       margin: 0 auto 20px;
     }
 
@@ -83,7 +87,7 @@
     }
 
     button {
-      background: linear-gradient(to right, #6e7dff, #4f88f8);
+      background: #664229;  /* Updated button color */
       color: white;
       font-weight: bold;
       cursor: pointer;
@@ -93,7 +97,7 @@
     }
 
     button:hover {
-      background: linear-gradient(to right, #4f88f8, #6e7dff);
+      background: #4f88f8;  /* Updated hover color */
       transform: scale(1.05);
     }
 
@@ -126,7 +130,7 @@
 
     .spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #4f88f8;
+      border-top: 4px solid #664229;  /* Updated spinner color to brown */
       border-radius: 50%;
       width: 40px;
       height: 40px;
@@ -143,7 +147,7 @@
 </head>
 <body>
   <div class="container">
-    <img src="logo-02.png" alt="Logo" class="logo">
+    <img src="logo-02.png" alt="Logo" class="logo"> <!-- Same logo as before -->
     <h2>Check Property Availability</h2>
     <div class="input-group">
       <input type="date" id="datePicker">
@@ -168,10 +172,15 @@
         return;
       }
 
+      // Convert date to UTC and format it as "YYYY-MM-DD"
+      const dateObj = new Date(dateInput);
+      const utcDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+      const formattedDate = utcDate.toISOString().split('T')[0];
+
       resultDiv.innerHTML = "";
       spinner.style.display = 'block'; // Show loading spinner
 
-      fetch(`${apiUrl}?date=${dateInput}&includeNearby=${nearbyDays}`)
+      fetch(`${apiUrl}?date=${formattedDate}&includeNearby=${nearbyDays}`)
         .then(res => res.json())
         .then(data => {
           spinner.style.display = 'none'; // Hide loading spinner
