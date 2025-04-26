@@ -3,7 +3,7 @@ const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/logo-02.png'
+  '/icon.png'
 ];
 
 // Install event - caching app shell
