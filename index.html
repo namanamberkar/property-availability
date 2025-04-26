@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Property Availability</title>
+
+  <!-- Favicon for app icon (using the same logo) -->
+  <link rel="icon" href="logo-02.png" type="image/png"> <!-- Logo used as favicon -->
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #FFDA81;  /* Set background color as per your request */
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 450px;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .logo {
+      width: 120px;  /* Increased logo size */
+      margin: 0 auto 20px;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media(min-width: 600px) {
+      .input-group {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    input[type="date"], label, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 5px;
+      width: auto;
+    }
+
+    input[type="date"]:focus, button:focus {
+      outline: none;
+      border-color: #4f88f8;
+    }
+
+    input[type="date"] {
+      background: #f8f8f8;
+      color: #333;
+    }
+
+    button {
+      background: #664229;  /* Updated button color */
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background: #FFDA81;  /* Updated hover color */
+      transform: scale(1.05);
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: #333;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      min-height: 100px;
+      text-align: left;
+    }
+
+    #result ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    #result ul li {
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #664229;  /* Updated spinner color to brown */
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="logo-02.png" alt="Logo" class="logo"> <!-- Same logo as before -->
+    <h2>Check Property Availability</h2>
+    <div class="input-group">
+      <input type="date" id="datePicker">
+      <label><input type="checkbox" id="nearbyDays"> Include ±2 Days</label>
+    </div>
+    <button onclick="checkAvailability()">Check</button>
+    <div class="spinner" id="spinner"></div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbywOb7C47k-GMzp5U2MeJfg5Ap54molmHrSGorbiYKjxlAaelbCMpiUWg4JQaDvPXCqaQ/exec';
+
+    function checkAvailability() {
+      const dateInput = document.getElementById('datePicker').value;
+      const nearbyDays = document.getElementById('nearbyDays').checked;
+      const resultDiv = document.getElementById('result');
+      const spinner = document.getElementById('spinner');
+
+      if (!dateInput) {
+        alert("Please select a date.");
+        return;
+      }
+
+      // Convert date to UTC and format it as "YYYY-MM-DD"
+      const dateObj = new Date(dateInput);
+      const utcDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+      const formattedDate = utcDate.toISOString().split('T')[0];
+
+      resultDiv.innerHTML = "";
+      spinner.style.display = 'block'; // Show loading spinner
+
+      fetch(`${apiUrl}?date=${formattedDate}&includeNearby=${nearbyDays}`)
+        .then(res => res.json())
+        .then(data => {
+          spinner.style.display = 'none'; // Hide loading spinner
+
+          if (data.error) {
+            resultDiv.innerHTML = `<p class="error">${data.error}</p>`;
+            return;
+          }
+
+          if (data.available_properties && data.available_properties.length > 0) {
+            resultDiv.innerHTML = `
+              <strong>${data.available} properties available:</strong>
+              <ul>
+                ${data.available_properties.map(p => `<li><strong>${p.sheet}</strong> - ${p.date} (Available: ${p.available})</li>`).join('')}
+              </ul>
+            `;
+          } else {
+            resultDiv.innerHTML = `No properties are available for the selected date(s).`;
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          spinner.style.display = 'none';
+          resultDiv.innerHTML = "Error fetching data.";
+        });
+    }
+  </script>
+</body>
+</html>
