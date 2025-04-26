@@ -1,0 +1,114 @@
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheets = ss.getSheets().filter(sheet => sheet.getName() !== "Master" && !sheet.isSheetHidden());
+
+    const queryDate = e.parameter.date;
+    const includeNearby = e.parameter.includeNearby === "true";
+    if (!queryDate) {
+      throw new Error("Missing 'date' parameter");
+    }
+
+    const queryDateObj = new Date(queryDate);
+    queryDateObj.setUTCHours(0, 0, 0, 0); // Ensure it's treated as UTC
+
+    const formatDate = date => date.toISOString().split('T')[0]; // Use UTC format for consistent results
+
+    const nearbyDates = [];
+    if (includeNearby) {
+      for (let offset = -2; offset <= 2; offset++) {
+        const tempDate = new Date(queryDateObj);
+        tempDate.setUTCDate(tempDate.getUTCDate() + offset); // Use UTC date handling
+        nearbyDates.push(formatDate(tempDate));
+      }
+    } else {
+      nearbyDates.push(formatDate(queryDateObj));
+    }
+
+    const availableProperties = [];
+
+    sheets.forEach(sheet => {
+      const data = sheet.getDataRange().getValues();
+      if (data.length < 3) return;
+
+      // Header detection (Row 1)
+      const headersRow = data[0];
+      const availabilityColIndex = headersRow.findIndex(header => {
+        if (!header) return false;
+        const cleanHeader = header.toString().trim().toLowerCase();
+        return cleanHeader.includes("availability");
+      });
+
+      if (availabilityColIndex === -1) {
+        throw new Error(`'Availability' column not found in sheet '${sheet.getName()}'`);
+      }
+
+      // Read Month-Year from A1
+      let monthYearCell = data[0][0];
+      let monthYearString = "";
+
+      if (monthYearCell instanceof Date) {
+        const options = { month: 'short', year: 'numeric' };
+        monthYearString = monthYearCell.toLocaleDateString('en-US', options).replace(',', '');
+      } else {
+        monthYearString = (monthYearCell || "").toString().trim();
+      }
+
+      if (!monthYearString) {
+        throw new Error(`Month-Year missing in A1 in sheet '${sheet.getName()}'`);
+      }
+
+      const [monthStr, yearStr] = monthYearString.split(' ');
+      if (!monthStr || !yearStr) {
+        throw new Error(`Invalid Month-Year format in '${sheet.getName()}': '${monthYearString}'`);
+      }
+
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthIndex = monthNames.indexOf(monthStr);
+      if (monthIndex === -1) {
+        throw new Error(`Invalid month '${monthStr}' in '${sheet.getName()}'`);
+      }
+      const sheetMonth = monthIndex;
+      const sheetYear = parseInt(yearStr, 10);
+
+      // Row 3 and beyond: Day + Availability
+      const dates = data.slice(2); // from Row 3 onward
+      dates.forEach(row => {
+        const dayCell = row[0];
+        const avail = row[availabilityColIndex];
+
+        const day = parseInt(dayCell);
+        if (isNaN(day)) return;
+
+        const cellDateObj = new Date(sheetYear, sheetMonth, day);
+        cellDateObj.setUTCHours(0, 0, 0, 0); // Ensure it's treated as UTC
+        const formattedCellDate = formatDate(cellDateObj);
+
+        if (nearbyDates.includes(formattedCellDate)) {
+          if (avail && Number(avail) > 0) {
+            availableProperties.push({
+              sheet: sheet.getName(),
+              date: formattedCellDate,
+              available: avail
+            });
+          }
+        }
+      });
+    });
+
+    const result = {
+      query_date: formatDate(queryDateObj),
+      includeNearby,
+      available: availableProperties.length,
+      available_properties: availableProperties
+    };
+
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ error: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
