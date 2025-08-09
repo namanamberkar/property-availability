@@ -6,7 +6,8 @@
   <title>Property Availability</title>
 
   <!-- Favicon for app icon (using the same logo) -->
-  <link rel="icon" href="logo-02.png" type="image/png"> <!-- Logo used as favicon -->
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="manifest" href="manifest.json">
 
   <style>
     * {
@@ -17,7 +18,7 @@
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #FFDA81;  /* Set background color as per your request */
+      background: #FFDA81;  /* Background color */
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -37,7 +38,7 @@
     }
 
     .logo {
-      width: 120px;  /* Increased logo size */
+      width: 120px;  /* Bigger logo */
       margin: 0 auto 20px;
     }
 
@@ -87,7 +88,7 @@
     }
 
     button {
-      background: #664229;  /* Updated button color */
+      background: #664229;  /* Button color */
       color: white;
       font-weight: bold;
       cursor: pointer;
@@ -97,7 +98,7 @@
     }
 
     button:hover {
-      background: #FFDA81;  /* Updated hover color */
+      background: #FFDA81;
       transform: scale(1.05);
     }
 
@@ -130,7 +131,7 @@
 
     .spinner {
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #664229;  /* Updated spinner color to brown */
+      border-top: 4px solid #664229;  /* Spinner brown */
       border-radius: 50%;
       width: 40px;
       height: 40px;
@@ -147,7 +148,7 @@
 </head>
 <body>
   <div class="container">
-    <img src="logo-02.png" alt="Logo" class="logo"> <!-- Same logo as before -->
+    <img src="icon.png" alt="Logo" class="logo">
     <h2>Check Property Availability</h2>
     <div class="input-group">
       <input type="date" id="datePicker">
@@ -172,18 +173,17 @@
         return;
       }
 
-      // Convert date to UTC and format it as "YYYY-MM-DD"
       const dateObj = new Date(dateInput);
       const utcDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
       const formattedDate = utcDate.toISOString().split('T')[0];
 
       resultDiv.innerHTML = "";
-      spinner.style.display = 'block'; // Show loading spinner
+      spinner.style.display = 'block';
 
       fetch(`${apiUrl}?date=${formattedDate}&includeNearby=${nearbyDays}`)
         .then(res => res.json())
         .then(data => {
-          spinner.style.display = 'none'; // Hide loading spinner
+          spinner.style.display = 'none';
 
           if (data.error) {
             resultDiv.innerHTML = `<p class="error">${data.error}</p>`;
@@ -205,6 +205,17 @@
           console.error(err);
           spinner.style.display = 'none';
           resultDiv.innerHTML = "Error fetching data.";
+        });
+    }
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(function(registration) {
+          console.log('Service Worker registered with scope:', registration.scope);
+        })
+        .catch(function(error) {
+          console.log('Service Worker registration failed:', error);
         });
     }
   </script>
